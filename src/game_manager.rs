@@ -166,6 +166,31 @@ impl GameBoard {
         self.m_board[pos.m_row as usize][pos.m_col as usize] = color_self;
         num_pieces_flipped
     }
+
+    fn generate_next_available_moves(&self, turn: bool) -> BoardLUT {
+        let mut next_available_moves = BoardLUT::new();
+        let color_self = if TURN_WHITE == turn {
+            PIECE_WHITE
+        } else {
+            PIECE_BLACK
+        };
+        let color_opponent = if PIECE_WHITE == color_self {
+            PIECE_BLACK
+        } else {
+            PIECE_WHITE
+        };
+
+        for row in 0..BOARD_DIMENSION {
+            for col in 0..BOARD_DIMENSION {
+                let pos = Position::new(row as i8, col as i8);
+                if false == self.is_available_move(&pos, color_self, color_opponent) {
+                    continue;
+                }
+                next_available_moves.insert(&pos);
+            }
+        }
+        next_available_moves
+    }
 }
 
 struct BoardLUT {
@@ -177,7 +202,7 @@ impl BoardLUT {
     fn new() -> BoardLUT {
         BoardLUT {
             m_lut: [[false; BOARD_DIMENSION]; BOARD_DIMENSION],
-            m_num_set: 0
+            m_num_set: 0,
         }
     }
 
@@ -209,7 +234,7 @@ impl GameManager {
     pub fn new() -> GameManager {
         const INITIAL_TURN: bool = TURN_BLACK;
         let game_board = GameBoard::new();
-        let next_available_moves = generate_next_available_moves(&game_board, INITIAL_TURN);
+        let next_available_moves = game_board.generate_next_available_moves(INITIAL_TURN);
 
         GameManager {
             m_board: game_board,
@@ -261,13 +286,13 @@ impl GameManager {
         }
 
         self.switch_turn();
-        self.m_next_available_moves = generate_next_available_moves(&self.m_board, self.m_turn);
+        self.m_next_available_moves = self.m_board.generate_next_available_moves(self.m_turn);
         if false == self.m_next_available_moves.is_empty() {
             return false;
         }
 
         self.switch_turn();
-        self.m_next_available_moves = generate_next_available_moves(&self.m_board, self.m_turn);
+        self.m_next_available_moves = self.m_board.generate_next_available_moves(self.m_turn);
         if false == self.m_next_available_moves.is_empty() {
             return false;
         }
@@ -289,29 +314,4 @@ impl GameManager {
             self.m_num_black += num_piece_flipped + 1;
         }
     }
-}
-
-fn generate_next_available_moves(game_board: &GameBoard, turn: bool) -> BoardLUT {
-    let mut next_available_moves = BoardLUT::new();
-    let color_self = if TURN_WHITE == turn {
-        PIECE_WHITE
-    } else {
-        PIECE_BLACK
-    };
-    let color_opponent = if PIECE_WHITE == color_self {
-        PIECE_BLACK
-    } else {
-        PIECE_WHITE
-    };
-
-    for row in 0..BOARD_DIMENSION {
-        for col in 0..BOARD_DIMENSION {
-            let pos = Position::new(row as i8, col as i8);
-            if false == game_board.is_available_move(&pos, color_self, color_opponent) {
-                continue;
-            }
-            next_available_moves.insert(&pos);
-        }
-    }
-    return next_available_moves;
 }
