@@ -1,14 +1,23 @@
 mod game_manager;
 
 use game_manager::GameManager;
-use game_manager::Position;
 
 fn main() {
-    let mut game_manager = GameManager::new();
-    game_manager.print_board(true);
-    game_manager.make_move(&Position::new(3, 2));
-    if (game_manager.check_game_over()) {
-        return;
+    let mut mgr = GameManager::new();
+    loop {
+        mgr.print_board(false);
+        match mgr.ask_for_input() {
+            Ok(next_move) => {
+                mgr.make_move(&next_move);
+            }
+            Err(err) => {
+                println!("{}", err);
+                continue;
+            }
+        }
+        if mgr.advance_to_next_turn() {
+            mgr.print_game_result();
+            break;
+        }
     }
-    game_manager.print_board(true);
 }

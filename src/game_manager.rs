@@ -19,6 +19,7 @@ const DELTAS: [[i8; 2]; 8] = [
 ];
 
 type GameBoardArray = [[char; BOARD_DIMENSION]; BOARD_DIMENSION];
+use std::io::Write;
 
 pub struct Position {
     pub m_row: i8,
@@ -169,16 +170,7 @@ impl GameBoard {
 
     fn generate_next_available_moves(&self, turn: bool) -> BoardLUT {
         let mut next_available_moves = BoardLUT::new();
-        let color_self = if TURN_WHITE == turn {
-            PIECE_WHITE
-        } else {
-            PIECE_BLACK
-        };
-        let color_opponent = if PIECE_WHITE == color_self {
-            PIECE_BLACK
-        } else {
-            PIECE_WHITE
-        };
+        let (color_self, color_opponent) = get_color_from_turn(turn);
 
         for row in 0..BOARD_DIMENSION {
             for col in 0..BOARD_DIMENSION {
@@ -260,17 +252,7 @@ impl GameManager {
             return false;
         }
 
-        let color_self = if TURN_WHITE == self.m_turn {
-            PIECE_WHITE
-        } else {
-            PIECE_BLACK
-        };
-        let color_opponent = if PIECE_WHITE == color_self {
-            PIECE_BLACK
-        } else {
-            PIECE_WHITE
-        };
-
+        let (color_self, color_opponent) = get_color_from_turn(self.m_turn);
         let num_piece_flipped = self.m_board.make_move(pos, color_self, color_opponent);
         if 0 == num_piece_flipped {
             return false;
@@ -280,7 +262,7 @@ impl GameManager {
         true
     }
 
-    pub fn check_game_over(&mut self) -> bool {
+    pub fn advance_to_next_turn(&mut self) -> bool {
         if self.m_game_over {
             return true;
         }
@@ -291,6 +273,9 @@ impl GameManager {
             return false;
         }
 
+        let (turn_to_skip, _) = get_color_from_turn(self.m_turn);
+        println!("{} player has no valid move.", turn_to_skip);
+
         self.switch_turn();
         self.m_next_available_moves = self.m_board.generate_next_available_moves(self.m_turn);
         if false == self.m_next_available_moves.is_empty() {
@@ -299,6 +284,52 @@ impl GameManager {
 
         self.m_game_over = true;
         true
+    }
+
+    pub fn ask_for_input(&mut self) -> Result<Position, String> {
+        let (color_self, _) = get_color_from_turn(self.m_turn);
+        print!("Enter move for colour {} (RowCol): ", { color_self });
+        std::io::stdout().flush().expect("Failed to flush stdout.");
+        let mut input = String::new();
+        std::io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read lint.");
+        if 3 != input.len() {
+            return Err(String::from("Invalid move. Try again."));
+        }
+
+        let row_char = input.chars().nth(0).unwrap();
+        let col_char = input.chars().nth(1).unwrap();
+        if false == is_valid_pos_char(row_char) || false == is_valid_pos_char(col_char) {
+            return Err(String::from("Invalid move. Try again."));
+        }
+
+        let pos = Position::new(row_char as i8 - 'a' as i8, col_char as i8 - 'a' as i8);
+        if false == self.m_next_available_moves.contains(&pos) {
+            return Err(String::from("Invalid move. Try again."));
+        }
+
+        Ok(pos)
+    }
+
+    pub fn print_game_result(&self) {
+        if false == self.m_game_over {
+            println!("Game isn't over.");
+            return;
+        }
+        if self.m_num_black == self.m_num_white {
+            println!("Draw!");
+        } else if self.m_num_black > self.m_num_white {
+            println!(
+                "Black wins by {} points!",
+                self.m_num_black - self.m_num_white
+            );
+        } else {
+            println!(
+                "White wins by {} points!",
+                self.m_num_white - self.m_num_black
+            );
+        }
     }
 
     fn switch_turn(&mut self) {
@@ -314,4 +345,15 @@ impl GameManager {
             self.m_num_black += num_piece_flipped + 1;
         }
     }
+}
+
+fn get_color_from_turn(turn: bool) -> (char, char) {
+    if TURN_WHITE == turn {
+        return (PIECE_WHITE, PIECE_BLACK);
+    }
+    (PIECE_BLACK, PIECE_WHITE)
+}
+
+fn is_valid_pos_char(c: char) -> bool {
+    'a' <= c && c <= 'h'
 }
