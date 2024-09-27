@@ -264,13 +264,13 @@ impl GameManager {
 
     pub fn advance_to_next_turn(&mut self) -> bool {
         if self.m_game_over {
-            return true;
+            return false;
         }
 
         self.switch_turn();
         self.m_next_available_moves = self.m_board.generate_next_available_moves(self.m_turn);
         if false == self.m_next_available_moves.is_empty() {
-            return false;
+            return true;
         }
 
         let (turn_to_skip, _) = get_color_from_turn(self.m_turn);
@@ -279,11 +279,11 @@ impl GameManager {
         self.switch_turn();
         self.m_next_available_moves = self.m_board.generate_next_available_moves(self.m_turn);
         if false == self.m_next_available_moves.is_empty() {
-            return false;
+            return true;
         }
 
         self.m_game_over = true;
-        true
+        false
     }
 
     pub fn ask_for_input(&mut self) -> Result<Position, String> {
