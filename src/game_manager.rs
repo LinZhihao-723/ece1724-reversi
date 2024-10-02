@@ -266,21 +266,21 @@ impl GameManager {
         if self.m_game_over {
             return false;
         }
+        let (curr_color, next_color) = get_color_from_turn(self.m_turn);
 
         self.switch_turn();
         self.m_next_available_moves = self.m_board.generate_next_available_moves(self.m_turn);
         if false == self.m_next_available_moves.is_empty() {
             return true;
         }
-
-        let (turn_to_skip, _) = get_color_from_turn(self.m_turn);
-        println!("{} player has no valid move.", turn_to_skip);
+        println!("{} player has no valid move.", next_color);
 
         self.switch_turn();
         self.m_next_available_moves = self.m_board.generate_next_available_moves(self.m_turn);
         if false == self.m_next_available_moves.is_empty() {
             return true;
         }
+        println!("{} player has no valid move.", curr_color);
 
         self.m_game_over = true;
         false
